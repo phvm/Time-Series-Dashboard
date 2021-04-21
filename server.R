@@ -88,7 +88,7 @@ server <- function(input, output) {
             ylab('Numero de queimadas') +
             coord_cartesian(ylim = c(aux1, aux2)) +
             theme_bw() +
-            scale_x_date(date_labels = "%Y")
+            scale_x_date(date_breaks = "1 year",date_labels = "%Y")
         
         a
     })
@@ -107,7 +107,8 @@ server <- function(input, output) {
         aux <- df$number %>% na.omit() %>% as.numeric()
         
         df %>%
-            ggplot(aes(x = year, y = number, gruop=1)) + geom_boxplot()
+            ggplot(aes(x = year, y = number, gruop=1)) + geom_boxplot() + 
+            labs(x='Anos', y='Numero de queimadas')
     })
     
     ################### Comparar ###################
@@ -117,23 +118,15 @@ server <- function(input, output) {
         state_name <- input$state_comp
         
         amazon_comp <- master_df %>% 
-            filter(state == state_name) 
+            filter(state %in% state_name) 
         
         return(amazon_comp)
     })
     
     ################ OUTPUT #####################
     Comp_Info_DataTable <- eventReactive(input$go_comp,{
-        state_name <- input$state_comp
-        
-        df <- master_df %>% 
-            filter(state %in% state_name)
-        
-        Queimadas <- df %>%
-            group_by(state) %>%
-            summarise(df$year)
+        df <- select_state_comp()
             
-        
         getmode <- function(v) {
             uniqv <- unique(v)
             uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -147,7 +140,7 @@ server <- function(input, output) {
         DesvioPadrão <- sd(Queimadas)
         
         
-        Estado <- input$state
+        Estado <- input$state_comp
         
         df_comp <-  data.frame(Estado, Media, Moda, Mediana, DesvioPadrão)
         
@@ -202,7 +195,17 @@ server <- function(input, output) {
         df <- select_state_comp()
         df$year <- ymd(df$year)
         ggplot(df)+
-            geom_col(aes(x = year, y = number)
-            )
+            geom_col(aes(x = year, y = number))+
+            labs(x='Anos', y="Numero de queimadas")
+    })
+    
+    output$line_comp <- renderPlot({
+        df <- select_state_comp()
+        df$year <- ymd(df$year)
+        ggplot(df, aes(x = df$year))+
+            geom_line(aes(y=df$number))+
+            geom_line(aes(y=df$number))+
+            labs(x='Anos', y='Numero de queimadas')+
+            scale_x_date(date_breaks = "1 year",date_labels = "%Y")
     })
 }

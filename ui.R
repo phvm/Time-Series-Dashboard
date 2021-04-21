@@ -58,6 +58,11 @@ body <- dashboardBody(
                         plotOutput('barr')
                     )
                 ),
+                fluidRow(
+                    box(title = "Gráfico em linhas das queimadas", width = 12, solidHeader = TRUE,
+                        plotOutput('line_comp')
+                    )
+                ),
         )
     )
 )
