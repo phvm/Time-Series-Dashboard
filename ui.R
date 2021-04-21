@@ -47,7 +47,17 @@ body <- dashboardBody(
                         uiOutput("timedate_comp"),
                         actionButton('go_comp', 'Buscar')
                     )
-                ),            
+                ),
+                fluidRow(
+                    box(title = "Informações sobre os estados", width = 12, solidHeader = TRUE,
+                        DTOutput('info_comp')
+                    )
+                ),
+                fluidRow(
+                    box(title = "Gráfico em barras das queimadas", width = 12, solidHeader = TRUE,
+                        plotOutput('barr')
+                    )
+                ),
         )
     )
 )

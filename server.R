@@ -1,15 +1,48 @@
 server <- function(input, output) {
+    ################### Medidas ###################
     ################### INPUT ####################
     select_state <- eventReactive(input$go, {
         
         state_name <- input$state
-        twin <- input$true_date
         
         amazon <- master_df %>% 
             filter(state == state_name) 
-        ## FALTA -> FILTRAR O DF POR DATA!!
         
         return(amazon)
+    })
+    
+    select_date <- eventReactive(input$go, {
+        
+        state_year <- input$year
+        
+        amazon_date <- master_df %>%
+            filter(year == year)
+        
+        return(amazon_date)
+    })
+    
+    ################ OUTPUT #####################
+    Info_DataTable <- eventReactive(input$go,{
+        df <- select_state()
+        getmode <- function(v) {
+            uniqv <- unique(v)
+            uniqv[which.max(tabulate(match(v, uniqv)))]
+        }
+        
+        Queimadas <- df$number %>% na.omit() %>% as.numeric()
+        
+        Media <- mean(Queimadas)
+        Moda <- getmode(Queimadas)
+        Mediana <- median(Queimadas)
+        DesvioPadrão <- sd(Queimadas)
+        
+        Estado <- input$state
+        
+        df_tb <-  data.frame(Estado, Media, Moda, Mediana, DesvioPadrão)
+        
+        df_tb <- as.data.frame(t(df_tb))
+        
+        return(df_tb)
     })
     
     output$timedate <- renderUI({
@@ -19,68 +52,16 @@ server <- function(input, output) {
         df <- master_df %>% 
             filter(state == state_name)
         
-        min_time <- min(df$year)
-        max_time <- max(df$year)
+        min_year <- min(df$year)
+        max_year <- max(df$year)
         dateRangeInput("true_date", "Período de análise",
-                       end = max_time,
-                       start = min_time,
-                       min  = min_time,
-                       max  = max_time,
+                       end = max_year,
+                       start = min_year,
+                       min  = min_year,
+                       max  = max_year,
                        format = "yy",
+                       separator = "-",
                        language='pt-BR')
-    })
-    
-    output$timedate_comp <- renderUI({
-        
-        state_name <- input$stock_comp
-        
-        df <- master_df %>% 
-            filter(state %in% state_name)
-        
-        maxmin_time <- df %>% 
-            group_by(state) %>% 
-            summarise(MD = min(year)) %>% 
-            .$MD %>% 
-            max()
-        
-        minmax_time <- df %>% 
-            group_by(state) %>% 
-            summarise(MD = max(year)) %>% 
-            .$MD %>% 
-            min()
-        
-        min_time <- maxmin_time
-        max_time <- minmax_time
-        
-        dateRangeInput("true_date_comp", "Período de análise",
-                       end = max_time,
-                       start = min_time,
-                       min    = min_time,
-                       max    = max_time,
-                       format = "yy",
-                       separator = " - ",
-                       language='pt-BR')
-    })
-    
-    ################ OUTPUT #####################
-    Info_DataTable <- eventReactive(input$go,{
-        df <- select_state()
-        
-        mean <- df %>% select(number) %>% colMeans()
-        Media <- mean[[1]]
-        
-        State <- input$state
-        
-        df_tb <-  data.frame(State, Media)
-        
-        df_tb <- as.data.frame(t(df_tb))
-        
-        # tb  <- as_tibble(cbind(nms = names(df_tb), t(df_tb)))
-        # tb <- tb %>% 
-        #     rename('Informações' = nms,
-        #            'Valores' = V2)
-        # 
-        return(df_tb)
     })
     
     output$info <- renderDT({
@@ -113,12 +94,115 @@ server <- function(input, output) {
     })
     
     output$hist <- renderPlot({
-        df <- select_state()
+        df <- select_date()
         
+        Queimadas <- df$number %>% na.omit() %>% as.numeric()
+        
+        hist(Queimadas, main="Histograma", ylab= "Frequência", xlab= "Quantia de queimadas")
     })
     
     output$boxp <- renderPlot({
         df <- select_state()
+        df$year <- ymd(df$year)
+        aux <- df$number %>% na.omit() %>% as.numeric()
         
+        df %>%
+            ggplot(aes(x = year, y = number, gruop=1)) + geom_boxplot()
+    })
+    
+    ################### Comparar ###################
+    ################### INPUT ####################
+    select_state_comp <- eventReactive(input$go_comp, {
+        
+        state_name <- input$state_comp
+        
+        amazon_comp <- master_df %>% 
+            filter(state == state_name) 
+        
+        return(amazon_comp)
+    })
+    
+    ################ OUTPUT #####################
+    Comp_Info_DataTable <- eventReactive(input$go_comp,{
+        state_name <- input$state_comp
+        
+        df <- master_df %>% 
+            filter(state %in% state_name)
+        
+        Queimadas <- df %>%
+            group_by(state) %>%
+            summarise(df$year)
+            
+        
+        getmode <- function(v) {
+            uniqv <- unique(v)
+            uniqv[which.max(tabulate(match(v, uniqv)))]
+        }
+        
+        Queimadas <- df$number %>% na.omit() %>% as.numeric()
+        
+        Media <- mean(Queimadas)
+        Moda <- getmode(Queimadas)
+        Mediana <- median(Queimadas)
+        DesvioPadrão <- sd(Queimadas)
+        
+        
+        Estado <- input$state
+        
+        df_comp <-  data.frame(Estado, Media, Moda, Mediana, DesvioPadrão)
+        
+        df_comp <- as.data.frame(t(df_comp))
+        
+        return(df_comp)
+    })
+    
+    output$timedate_comp <- renderUI({
+        
+        state_name <- input$state_comp
+        
+        df <- master_df %>% 
+            filter(state %in% state_name)
+        
+        maxmin_year <- df %>% 
+            group_by(state) %>% 
+            summarise(MD = min(year)) %>% 
+            .$MD %>% 
+            max()
+        
+        minmax_year <- df %>% 
+            group_by(state) %>% 
+            summarise(MD = max(year)) %>% 
+            .$MD %>% 
+            min()
+        
+        min_year <- maxmin_year
+        max_year <- minmax_year
+        
+        dateRangeInput("true_date_comp", "Período de análise",
+                       end = max_year,
+                       start = min_year,
+                       min    = min_year,
+                       max    = max_year,
+                       format = "yy",
+                       separator = "-",
+                       language='pt-BR')
+    })
+    
+    output$info_comp <- renderDT({
+        Comp_Info_DataTable() %>%
+            as.data.frame() %>% 
+            DT::datatable(options=list(
+                language=list(
+                    url = '//cdn.datatables.net/plug-ins/1.10.11/i18n/Portuguese-Brasil.json'
+                )
+            ))
+    })
+    
+    output$barr <- renderPlot({
+        df <- select_state_comp()
+        df$year <- ymd(df$year)
+        ggplot(df)+
+            geom_col(aes(x = year, y = number)
+            )
     })
 }
